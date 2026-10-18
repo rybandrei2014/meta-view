@@ -32,6 +32,7 @@ Files are parsed **locally**; nothing is uploaded anywhere.
 | TIFF | full EXIF (IFD0, Exif, GPS, Interop) |
 | SVG | width, height, viewBox, version, xmlns |
 | MP3 | ID3v2.2/3/4 tags, ID3v1, MPEG version/layer/bitrate/sample rate, duration |
+| FLAC | STREAMINFO (sample rate, channels, bit depth, total samples, MD5, block/frame sizes), duration, VORBIS_COMMENT tags (vendor, title, artist, …), picture/padding blocks |
 | WAV | PCM format, channels, sample rate, bit depth, duration, LIST INFO tags |
 | MP4/MOV/M4A | brands, creation/modification time, duration, track dimensions |
 | AVI | frame size, frame rate, frame count, duration, codec fourcc |

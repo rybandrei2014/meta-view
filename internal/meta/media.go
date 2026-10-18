@@ -202,6 +202,96 @@ func fmtDuration(d time.Duration) string {
 	return fmt.Sprintf("%d:%02d", int(d.Minutes()), int(d.Seconds())%60)
 }
 
+func parseFLAC(data []byte, r *Result) {
+	if len(data) < 4 || string(data[0:4]) != "fLaC" {
+		return
+	}
+	off := 4
+	for off+4 <= len(data) {
+		last := data[off]&0x80 != 0
+		typ := data[off] & 0x7F
+		size := int(data[off+1])<<16 | int(data[off+2])<<8 | int(data[off+3])
+		off += 4
+		if size < 0 || off+size > len(data) {
+			break
+		}
+		p := data[off : off+size]
+		switch typ {
+		case 0: // STREAMINFO
+			if len(p) >= 34 {
+				minBlock := int(p[0])<<8 | int(p[1])
+				maxBlock := int(p[2])<<8 | int(p[3])
+				minFrame := int(p[4])<<16 | int(p[5])<<8 | int(p[6])
+				maxFrame := int(p[7])<<16 | int(p[8])<<8 | int(p[9])
+				sampleRate := uint32(p[10])<<12 | uint32(p[11])<<4 | uint32(p[12])>>4
+				channels := int((p[12]>>1)&7) + 1
+				bits := int((p[12]&1)<<4|p[13]>>4) + 1
+				total := uint64(p[13]&0x0F)<<32 | uint64(p[14])<<24 |
+					uint64(p[15])<<16 | uint64(p[16])<<8 | uint64(p[17])
+				r.add("FLAC",
+					Property{"codec", "FLAC (Free Lossless Audio Codec)"},
+					Property{"block size min", fmt.Sprint(minBlock)},
+					Property{"block size max", fmt.Sprint(maxBlock)},
+					Property{"frame size min", fmt.Sprint(minFrame)},
+					Property{"frame size max", fmt.Sprint(maxFrame)},
+					Property{"sample rate", fmt.Sprintf("%d Hz", sampleRate)},
+					Property{"channels", fmt.Sprint(channels)},
+					Property{"bits per sample", fmt.Sprint(bits)},
+					Property{"total samples", fmt.Sprint(total)},
+					Property{"md5 signature", fmt.Sprintf("%X", p[18:34])},
+				)
+				if sampleRate > 0 && total > 0 {
+					secs := float64(total) / float64(sampleRate)
+					r.add("FLAC", Property{"duration", fmtDuration(time.Duration(secs * float64(time.Second)))})
+				}
+			}
+		case 1:
+			if size > 0 {
+				r.add("FLAC", Property{"padding", humanSize(int64(size))})
+			}
+		case 4: // VORBIS_COMMENT
+			parseVorbisComments(p, r)
+		case 6: // PICTURE
+			r.add("FLAC", Property{"embedded picture", fmt.Sprintf("%d bytes", size)})
+		}
+		off += size
+		if last {
+			break
+		}
+	}
+}
+
+func parseVorbisComments(p []byte, r *Result) {
+	if len(p) < 4 {
+		return
+	}
+	vlen := int(binary.LittleEndian.Uint32(p[0:]))
+	if vlen < 0 || 4+vlen > len(p) {
+		return
+	}
+	if vendor := trimNUL(string(p[4 : 4+vlen])); vendor != "" {
+		r.add("FLAC Tags", Property{"vendor", vendor})
+	}
+	rest := p[4+vlen:]
+	if len(rest) < 4 {
+		return
+	}
+	n := int(binary.LittleEndian.Uint32(rest[0:]))
+	rest = rest[4:]
+	for i := 0; i < n && len(rest) >= 4; i++ {
+		clen := int(binary.LittleEndian.Uint32(rest[0:]))
+		rest = rest[4:]
+		if clen < 0 || clen > len(rest) {
+			break
+		}
+		comment := string(rest[:clen])
+		rest = rest[clen:]
+		if k, v, ok := strings.Cut(comment, "="); ok {
+			r.add("FLAC Tags", Property{strings.ToLower(k), v})
+		}
+	}
+}
+
 func parseWAV(data []byte, r *Result) {
 	for off := 12; off+8 <= len(data); {
 		id := string(data[off : off+4])

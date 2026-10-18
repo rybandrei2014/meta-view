@@ -94,6 +94,8 @@ func Extract(name string, data []byte, mod time.Time) *Result {
 		parseSVG(data, r)
 	case "MP3":
 		parseMP3(data, r)
+	case "FLAC":
+		parseFLAC(data, r)
 	case "WAV":
 		parseWAV(data, r)
 	case "MP4", "QuickTime", "M4A":
@@ -133,6 +135,8 @@ func detect(data []byte, ext string) (string, string) {
 		return "GIF", "image/gif"
 	case has('B', 'M'):
 		return "BMP", "image/bmp"
+	case has('f', 'L', 'a', 'C'):
+		return "FLAC", "audio/flac"
 	case has('I', 'D', '3'):
 		return "MP3", "audio/mpeg"
 	case len(data) > 1 && data[0] == 0xFF && data[1]&0xE0 == 0xE0 && data[1]&0x18 != 0:
@@ -182,6 +186,8 @@ func detect(data []byte, ext string) (string, string) {
 		return "SVG", "image/svg+xml"
 	case "mp3":
 		return "MP3", "audio/mpeg"
+	case "flac":
+		return "FLAC", "audio/flac"
 	case "wav":
 		return "WAV", "audio/wav"
 	case "mp4", "m4v":

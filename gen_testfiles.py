@@ -109,4 +109,21 @@ area += struct.pack("<IIIIII", 16,1, 37,1, 0,1)          # lon 16:37:0
 tiff = b"II*\x00" + struct.pack("<I", ifd0) + ifd0_bytes + exif_bytes + gps_bytes + area
 open("testfiles/test.tiff","wb").write(tiff)
 
+# FLAC: fLaC + STREAMINFO + VORBIS_COMMENT
+sr, ch, bits, total = 44100, 2, 16, 441000
+b12 = ((sr & 0xF) << 4) | ((ch-1) << 1) | ((bits-1) >> 4 & 1)
+b13 = (((bits-1) & 0xF) << 4) | ((total >> 32) & 0xF)
+si = (struct.pack(">HH", 4096, 4096)
+      + struct.pack(">I", 8969)[1:] + struct.pack(">I", 19770)[1:]
+      + bytes([sr >> 12, (sr >> 4) & 0xFF, b12, b13])
+      + struct.pack(">I", total & 0xFFFFFFFF) + bytes(range(16)))
+vendor = b"reference libFLAC 1.4.3 20230623"
+comments = [b"TITLE=Test Song", b"ARTIST=Tester", b"GENRE=Punk"]
+vc = struct.pack("<I", len(vendor)) + vendor + struct.pack("<I", len(comments))
+for c in comments: vc += struct.pack("<I", len(c)) + c
+flac = b"fLaC" + bytes([0x00]) + struct.pack(">I", len(si))[1:] + si \
+       + bytes([0x84]) + struct.pack(">I", len(vc))[1:] + vc
+open("testfiles/test.flac","wb").write(flac)
+
 print("wrote", os.listdir("testfiles"))
+
