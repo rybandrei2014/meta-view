@@ -65,11 +65,24 @@ body {
   text-align: center;
   transition: background .15s, border-color .15s, box-shadow .15s;
 }
-.drop-zone.drag { background: var(--accent-soft); border-color: var(--accent-strong); box-shadow: 0 0 0 4px var(--accent-soft); }
 .drop-inner { padding: 40px 20px; display: grid; gap: 14px; justify-items: center; }
 .drop-art { margin-bottom: 6px; }
 .drop-hint { color: var(--muted); margin: 0; }
 .drop-zone.loading .drop-inner { opacity: .55; }
+
+/* global drag overlay */
+.drag-overlay {
+  position: fixed; inset: 14px; z-index: 50; pointer-events: none;
+  border: 3px dashed var(--accent); border-radius: 16px;
+  background: rgba(18, 165, 196, .07);
+  display: none; place-items: center;
+}
+body.dragging .drag-overlay { display: grid; }
+.drag-overlay div {
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 14px 26px; border-radius: 10px; font-weight: 650;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
 
 .badges { list-style: none; display: flex; flex-wrap: wrap; gap: 26px; padding: 0; margin: 18px 2px 0; color: var(--muted); font-size: 14px; }
 .badges li { display: flex; align-items: center; gap: 8px; }

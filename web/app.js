@@ -20,19 +20,32 @@
     if (fileInput.files.length) upload(fileInput.files[0]);
   });
 
-  ["dragenter", "dragover"].forEach((ev) =>
-    dropZone.addEventListener(ev, (e) => {
-      e.preventDefault();
-      dropZone.classList.add("drag");
-    })
-  );
-  ["dragleave", "drop"].forEach((ev) =>
-    dropZone.addEventListener(ev, (e) => {
-      e.preventDefault();
-      dropZone.classList.remove("drag");
-    })
-  );
-  dropZone.addEventListener("drop", (e) => {
+  // global drag & drop: works over the upload view AND the results view
+  let dragDepth = 0;
+  const hasFiles = (e) =>
+    e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files");
+  document.addEventListener("dragenter", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth++;
+    document.body.classList.add("dragging");
+  });
+  document.addEventListener("dragover", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  });
+  document.addEventListener("dragleave", () => {
+    if (--dragDepth <= 0) {
+      dragDepth = 0;
+      document.body.classList.remove("dragging");
+    }
+  });
+  document.addEventListener("drop", (e) => {
+    if (!hasFiles(e)) return;
+    e.preventDefault();
+    dragDepth = 0;
+    document.body.classList.remove("dragging");
     const f = e.dataTransfer.files && e.dataTransfer.files[0];
     if (f) upload(f);
   });
