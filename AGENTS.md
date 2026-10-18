@@ -36,7 +36,7 @@ internal/meta/     all extraction logic (no external deps)
   meta.go          Property/Section/Result types, detect() magic-byte dispatcher, hexDump
   exif.go          TIFF/EXIF parser (IFD0, Exif, GPS, Interop sub-IFDs)
   jpeg.go          JPEG markers: JFIF, APP1 Exif/XMP, COM, SOF
-  png.go  images.go (GIF/BMP/WebP/SVG)  media.go (MP3/FLAC/WAV/MP4-MOV/AVI/PDF)
+  png.go  images.go (GIF/BMP/WebP/SVG)  media.go (MP3/FLAC/WAV/MP4-MOV-M4A/AVI/PDF/Opus-Ogg)
   extract_test.go  smoke test over testfiles/
 web/               index.html, style.css, app.js (no framework, no build step)
 design/            original UI mockups — match this look

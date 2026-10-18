@@ -250,7 +250,7 @@ func parseFLAC(data []byte, r *Result) {
 				r.add("FLAC", Property{"padding", humanSize(int64(size))})
 			}
 		case 4: // VORBIS_COMMENT
-			parseVorbisComments(p, r)
+			parseVorbisComments(p, "FLAC Tags", r)
 		case 6: // PICTURE
 			r.add("FLAC", Property{"embedded picture", fmt.Sprintf("%d bytes", size)})
 		}
@@ -261,7 +261,7 @@ func parseFLAC(data []byte, r *Result) {
 	}
 }
 
-func parseVorbisComments(p []byte, r *Result) {
+func parseVorbisComments(p []byte, section string, r *Result) {
 	if len(p) < 4 {
 		return
 	}
@@ -270,7 +270,7 @@ func parseVorbisComments(p []byte, r *Result) {
 		return
 	}
 	if vendor := trimNUL(string(p[4 : 4+vlen])); vendor != "" {
-		r.add("FLAC Tags", Property{"vendor", vendor})
+		r.add(section, Property{"vendor", vendor})
 	}
 	rest := p[4+vlen:]
 	if len(rest) < 4 {
@@ -287,7 +287,125 @@ func parseVorbisComments(p []byte, r *Result) {
 		comment := string(rest[:clen])
 		rest = rest[clen:]
 		if k, v, ok := strings.Cut(comment, "="); ok {
-			r.add("FLAC Tags", Property{strings.ToLower(k), v})
+			r.add(section, Property{strings.ToLower(k), v})
+		}
+	}
+}
+
+var mp4TagNames = map[string]string{
+	"\xa9nam": "title", "\xa9ART": "artist", "\xa9alb": "album", "\xa9day": "year",
+	"\xa9gen": "genre", "\xa9grp": "grouping", "\xa9lyr": "lyrics", "\xa9cmt": "comment",
+	"\xa9too": "encoder", "\xa9enc": "encoded by", "\xa9wrt": "composer",
+	"aART": "album artist", "trkn": "track", "disk": "disc", "covr": "cover art",
+	"desc": "description", "sonm": "sort title", "sart": "sort artist",
+	"hdvd": "high definition video", "pgap": "gapless playback",
+}
+
+func parseMP4Tags(data []byte, start, end int, r *Result) {
+	off := start
+	for off+8 <= end {
+		size := int(binary.BigEndian.Uint32(data[off:]))
+		typ := string(data[off+4 : off+8])
+		if size < 8 || off+size > end {
+			break
+		}
+		inner := data[off+8 : off+size]
+		name, ok := mp4TagNames[typ]
+		if !ok {
+			name = trim(typ)
+		}
+		if len(inner) >= 16 && string(inner[4:8]) == "data" {
+			dsize := int(binary.BigEndian.Uint32(inner))
+			if dsize >= 16 && dsize <= len(inner) {
+				payload := inner[16:dsize]
+				var val string
+				switch {
+				case typ == "trkn" || typ == "disk":
+					if len(payload) >= 6 {
+						a := int(binary.BigEndian.Uint16(payload[2:]))
+						b := int(binary.BigEndian.Uint16(payload[4:]))
+						val = fmt.Sprintf("%d of %d", a, b)
+					}
+				case typ == "covr":
+					kind := "image"
+					switch {
+					case len(payload) > 2 && payload[0] == 0xFF && payload[1] == 0xD8:
+						kind = "JPEG"
+					case len(payload) > 3 && string(payload[1:4]) == "PNG":
+						kind = "PNG"
+					}
+					val = fmt.Sprintf("%s, %d bytes", kind, len(payload))
+				default:
+					val = trimNUL(string(payload))
+				}
+				if val != "" {
+					r.add("MP4 Tags", Property{name, val})
+				}
+			}
+		}
+		off += size
+	}
+}
+
+func parseOGG(data []byte, r *Result) {
+	var preskip int
+	var lastGranule int64 = -1
+	serials := map[uint32]bool{}
+	off := 0
+	for off+27 <= len(data) && string(data[off:off+4]) == "OggS" {
+		headerType := data[off+5]
+		granule := int64(binary.LittleEndian.Uint64(data[off+6:]))
+		serial := binary.LittleEndian.Uint32(data[off+14:])
+		nseg := int(data[off+26])
+		if off+27+nseg > len(data) {
+			break
+		}
+		seg := data[off+27 : off+27+nseg]
+		bodyLen := 0
+		for _, s := range seg {
+			bodyLen += int(s)
+		}
+		bodyStart := off + 27 + nseg
+		if bodyStart+bodyLen > len(data) {
+			break
+		}
+		body := data[bodyStart : bodyStart+bodyLen]
+		serials[serial] = true
+		if headerType&0x02 != 0 {
+			switch {
+			case len(body) >= 19 && string(body[0:8]) == "OpusHead":
+				channels := int(body[9])
+				preskip = int(le16(body[10:]))
+				inputRate := binary.LittleEndian.Uint32(body[12:])
+				r.add("Opus",
+					Property{"codec", "Opus"},
+					Property{"channels", fmt.Sprint(channels)},
+					Property{"pre-skip", fmt.Sprintf("%d samples", preskip)},
+					Property{"input sample rate", fmt.Sprintf("%d Hz", inputRate)},
+					Property{"output gain", fmt.Sprintf("%.2f dB", float64(int16(le16(body[16:])))/256)},
+				)
+			case len(body) >= 8 && body[0] == 0x7F && string(body[1:5]) == "flac":
+				r.add("Ogg", Property{"codec", "FLAC in Ogg"})
+			}
+		}
+		switch {
+		case len(body) >= 8 && string(body[0:8]) == "OpusTags":
+			parseVorbisComments(body[8:], "Ogg Tags", r)
+		case len(body) >= 7 && string(body[1:7]) == "vorbis":
+			parseVorbisComments(body[7:], "Ogg Tags", r)
+		}
+		if granule >= 0 {
+			lastGranule = granule
+		}
+		off = bodyStart + bodyLen
+	}
+	if len(serials) > 1 {
+		r.add("Ogg", Property{"logical streams", fmt.Sprint(len(serials))})
+	}
+	if lastGranule > 0 && r.Format == "Opus" {
+		secs := float64(lastGranule-int64(preskip)) / 48000.0
+		if secs > 0 {
+			r.add("Opus", Property{"duration", fmtDuration(time.Duration(secs * float64(time.Second)))})
 		}
 	}
 }
@@ -409,8 +527,10 @@ func parseMP4Boxes(data []byte, start, end, depth int, r *Result) {
 					Property{"compatible brands", strings.Join(brands[1:], ", ")},
 				)
 			}
-		case "moov", "trak", "mdia", "minf", "stbl", "udta", "ilst":
+		case "moov", "trak", "mdia", "minf", "stbl", "udta":
 			parseMP4Boxes(data, off+hdr, off+size, depth+1, r)
+		case "ilst":
+			parseMP4Tags(data, off+hdr, off+size, r)
 		case "meta":
 			if len(body) > 4 {
 				parseMP4Boxes(data, off+hdr+4, off+size, depth+1, r)

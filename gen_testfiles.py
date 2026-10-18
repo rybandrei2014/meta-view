@@ -125,5 +125,37 @@ flac = b"fLaC" + bytes([0x00]) + struct.pack(">I", len(si))[1:] + si \
        + bytes([0x84]) + struct.pack(">I", len(vc))[1:] + vc
 open("testfiles/test.flac","wb").write(flac)
 
+# Opus (Ogg container)
+def ogg_page(body, granule=0, serial=1, seq=0, htype=0):
+    segs = []
+    n = len(body)
+    while n >= 255: segs.append(255); n -= 255
+    segs.append(n)
+    return (b"OggS" + bytes([0, htype]) + struct.pack("<q", granule) +
+            struct.pack("<II", serial, seq) + b"\x00\x00\x00\x00" +
+            bytes([len(segs)]) + bytes(segs) + body)
+opus_head = (b"OpusHead" + bytes([1, 2]) + struct.pack("<H", 3840) +
+             struct.pack("<I", 48000) + struct.pack("<h", 0) + bytes([0]))
+vendor = b"libopus"
+cmts = [b"TITLE=Test Opus", b"ARTIST=Tester"]
+opus_tags = b"OpusTags" + struct.pack("<I", len(vendor)) + vendor + struct.pack("<I", len(cmts))
+for c in cmts: opus_tags += struct.pack("<I", len(c)) + c
+opus = (ogg_page(opus_head, 0, 1, 0, 0x02) + ogg_page(opus_tags, 0, 1, 1, 0x04) +
+        ogg_page(b"\xf8\xff\xfe" * 20, 483840, 1, 2, 0x04))
+open("testfiles/test.opus","wb").write(opus)
+
+# M4A with ilst tags
+def tag_atom(name, payload):
+    data = struct.pack(">I", 16+len(payload)) + b"data" + struct.pack(">II", 1, 0) + payload
+    return struct.pack(">I", 8+len(data)) + name + data
+ilst_body = (tag_atom(b"\xa9nam", b"Test Song") + tag_atom(b"\xa9ART", b"Tester") +
+             tag_atom(b"\xa9alb", b"Binary Album") + tag_atom(b"trkn", b"\x00\x00\x00\x03\x00\x0c\x00\x00") +
+             tag_atom(b"covr", b"\xff\xd8\xff\xe0junkjpeg\xff\xd9"))
+meta = bytes([0,0,0,0]) + box(b"hdlr", b"\x00"*16 + b"mdirappl" + b"\x00\x00\x00\x00\x00\x00\x00\x00") + box(b"ilst", ilst_body)
+mvhd_a = bytes([0,0,0,0]) + struct.pack(">IIII", mac, mac, 1000, 10500) + b"\x00"*60
+moov_a = box(b"mvhd", mvhd_a) + box(b"udta", box(b"meta", meta))
+m4a = box(b"ftyp", b"M4A " + struct.pack(">I", 0) + b"M4A mp42isom") + box(b"moov", moov_a)
+open("testfiles/test.m4a","wb").write(m4a)
+
 print("wrote", os.listdir("testfiles"))
 

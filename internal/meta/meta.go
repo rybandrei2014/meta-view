@@ -96,6 +96,8 @@ func Extract(name string, data []byte, mod time.Time) *Result {
 		parseMP3(data, r)
 	case "FLAC":
 		parseFLAC(data, r)
+	case "Opus", "Ogg":
+		parseOGG(data, r)
 	case "WAV":
 		parseWAV(data, r)
 	case "MP4", "QuickTime", "M4A":
@@ -135,6 +137,11 @@ func detect(data []byte, ext string) (string, string) {
 		return "GIF", "image/gif"
 	case has('B', 'M'):
 		return "BMP", "image/bmp"
+	case has('O', 'g', 'g', 'S'):
+		if strings.Contains(headString(data, 64), "OpusHead") {
+			return "Opus", "audio/opus"
+		}
+		return "Ogg", "application/ogg"
 	case has('f', 'L', 'a', 'C'):
 		return "FLAC", "audio/flac"
 	case has('I', 'D', '3'):
@@ -188,6 +195,8 @@ func detect(data []byte, ext string) (string, string) {
 		return "MP3", "audio/mpeg"
 	case "flac":
 		return "FLAC", "audio/flac"
+	case "opus", "ogg":
+		return "Opus", "audio/opus"
 	case "wav":
 		return "WAV", "audio/wav"
 	case "mp4", "m4v":
@@ -202,6 +211,13 @@ func detect(data []byte, ext string) (string, string) {
 		return "PDF", "application/pdf"
 	}
 	return "Unknown", "application/octet-stream"
+}
+
+func headString(data []byte, n int) string {
+	if len(data) > n {
+		data = data[:n]
+	}
+	return string(data)
 }
 
 func humanSize(n int64) string {
