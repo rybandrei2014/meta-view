@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meta View — view all metadata of your files</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%2312a5c4'/%3E%3Cpath d='M7 8h10M7 12h10M7 16h6' stroke='white' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+<div class="page">
+  <header class="masthead">
+    <h1>Meta View</h1>
+    <p class="tagline">View all metadata of your files</p>
+  </header>
+
+  <!-- Upload view -->
+  <main id="uploadView">
+    <div id="dropZone" class="drop-zone">
+      <div class="drop-inner">
+        <svg class="drop-art" viewBox="0 0 96 72" width="120" height="90" aria-hidden="true">
+          <g transform="rotate(-6 40 30)">
+            <rect x="18" y="12" width="44" height="34" rx="3" fill="#e8eaee"/>
+            <circle cx="34" cy="24" r="4" fill="#f2b23e"/>
+            <path d="M18 40l12-12 9 9 8-8 15 13v2H18z" fill="#b9bfc9"/>
+          </g>
+          <g transform="rotate(4 62 46)">
+            <rect x="44" y="30" width="40" height="30" rx="3" fill="#fff"/>
+            <circle cx="54" cy="40" r="3" fill="none" stroke="#12a5c4" stroke-width="2"/>
+            <path d="M60 38h16M60 44h16M60 50h10" stroke="#12a5c4" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="70" cy="46" r="10" fill="none" stroke="#39424e" stroke-width="3"/>
+            <path d="M77 53l7 7" stroke="#39424e" stroke-width="4" stroke-linecap="round"/>
+          </g>
+        </svg>
+        <button id="pickBtn" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Upload your file
+        </button>
+        <p class="drop-hint">or drop, paste, or select from anywhere</p>
+        <input id="fileInput" type="file" hidden>
+      </div>
+    </div>
+    <ul class="badges">
+      <li><span class="dot"></span>100% Free</li>
+      <li><span class="dot"></span>No installation required</li>
+      <li><span class="dot"></span>Private &mdash; files never leave your machine</li>
+    </ul>
+  </main>
+
+  <!-- Result view -->
+  <main id="resultView" hidden>
+    <div class="result-bar">
+      <div class="result-title">
+        <span class="ok-badge" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="14" height="14"><path d="M5 13l4 4L19 7" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <div>
+          <strong id="resName">file</strong>
+          <span id="resSub" class="muted"></span>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button id="exportJson" class="btn btn-ghost">Export JSON</button>
+        <button id="exportCsv" class="btn btn-ghost">Export CSV</button>
+        <button id="freshBtn" class="btn btn-primary">Start fresh</button>
+      </div>
+    </div>
+
+    <section class="cards" id="cards"></section>
+
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="search" type="search" placeholder="Search properties and values" autocomplete="off">
+      <button id="clearSearch" class="clear-btn" hidden aria-label="Clear search">&times;</button>
+    </div>
+
+    <section id="sections"></section>
+    <p id="noMatches" class="muted center" hidden>No properties match your search.</p>
+  </main>
+
+  <footer class="foot muted">Meta View &middot; runs locally on your machine</footer>
+</div>
+
+<div id="toast" class="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
