@@ -16,7 +16,7 @@ jobs:
       - name: Build all platforms
         env:
           VERSION: ${{ github.ref_name }}
-        run: ./build.sh
+        run: bash ./build.sh
       - uses: softprops/action-gh-release@v2
         with:
           files: |
