@@ -41,8 +41,10 @@ body {
 }
 .page { max-width: 1180px; margin: 0 auto; padding: 28px 24px 48px; }
 
+.brand { display: flex; align-items: center; gap: 14px; }
+.logo { border-radius: 10px; display: block; }
 .masthead h1 { margin: 0; font-size: 30px; letter-spacing: -.02em; }
-.tagline { margin: 4px 0 24px; color: var(--muted); }
+.tagline { margin: 2px 0 24px; color: var(--muted); }
 
 /* buttons */
 .btn {

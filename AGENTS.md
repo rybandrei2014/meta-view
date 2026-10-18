@@ -39,6 +39,7 @@ internal/meta/     all extraction logic (no external deps)
   png.go  images.go (GIF/BMP/WebP/SVG)  media.go (MP3/FLAC/WAV/MP4-MOV-M4A/AVI/PDF/Opus-Ogg)
   extract_test.go  smoke test over testfiles/
 web/               index.html, style.css, app.js (no framework, no build step)
+assets/            app icon master source (icon.png) — feeds tools/make_icon.ps1
 design/            original UI mockups — match this look
 dist/              cross-compiled release binaries (gitignored)
 ```
@@ -80,3 +81,10 @@ The design PNG screenshots in `design/` double as real-world PNG fixtures.
 
 `build.ps1` / `build.sh` cross-compile windows/darwin/linux × amd64/arm64 with
 `CGO_ENABLED=0 -trimpath -ldflags "-s -w"`. No C toolchain needed — do not add cgo.
+
+Windows exe icon: `icon.ico` + `rsrc_windows_{amd64,arm64}.syso` are committed at the
+module root; Go's linker picks up `.syso` files automatically for Windows targets.
+To change the icon: edit `assets/icon.png`, run `tools/make_icon.ps1`, then regenerate
+the syso files with `go install github.com/akavel/rsrc@latest` +
+`rsrc -ico icon.ico -o rsrc_windows_amd64.syso` (and `-arch arm64` for the arm64 one).
+The ICO must be classic BMP-encoded (PNG entries break rsrc).
