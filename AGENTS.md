@@ -80,7 +80,10 @@ The design PNG screenshots in `design/` double as real-world PNG fixtures.
 ## Release
 
 `build.ps1` / `build.sh` cross-compile windows/darwin/linux × amd64/arm64 with
-`CGO_ENABLED=0 -trimpath -ldflags "-s -w"`. No C toolchain needed — do not add cgo.
+`CGO_ENABLED=0 -trimpath -ldflags "-s -w"`, stamp `main.version` from `-Version`/`VERSION`,
+package one zip per platform + `dist/SHA256SUMS.txt`. No C toolchain needed — do not add cgo.
+Pushing a `v*` tag triggers `.github/workflows/release.yml` which publishes a GitHub
+Release; `.github/workflows/ci.yml` runs gofmt/vet/build/test on every push.
 
 Windows exe icon: `icon.ico` + `rsrc_windows_{amd64,arm64}.syso` are committed at the
 module root; Go's linker picks up `.syso` files automatically for Windows targets.

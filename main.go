@@ -19,11 +19,15 @@ import (
 //go:embed web
 var webFS embed.FS
 
+// stamped at build time: -ldflags "-X main.version=v1.0.0"
+var version = "dev"
+
 const maxUpload = 512 << 20
 
 func main() {
 	port := flag.Int("port", 0, "TCP port to listen on (0 = automatic)")
 	noBrowser := flag.Bool("no-browser", false, "do not open the browser automatically")
+	showVersion := flag.Bool("version", false, "print version and exit")
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, "usage: meta-view [flags] [file]")
 		fmt.Fprintln(os.Stderr, "")
@@ -33,6 +37,11 @@ func main() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println("meta-view", version)
+		return
+	}
 
 	var prefill *meta.Result
 	if flag.NArg() > 0 {

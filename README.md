@@ -70,6 +70,20 @@ go build -o meta-view .          # build for the current platform
 Cross-compilation works from any OS because the app is pure Go
 (`CGO_ENABLED=0`), so one command produces Windows, macOS and Linux binaries.
 
+## Releases
+
+Push a version tag and GitHub Actions publishes a GitHub Release with one zip per
+platform plus `SHA256SUMS.txt`:
+
+```sh
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+Locally, `.\build.ps1 -Version v1.0.0` (or `VERSION=v1.0.0 ./build.sh`) produces the
+same artifacts in `dist/`. Each zip contains the binary (`meta-view` / `meta-view.exe`)
+and this README. Verify downloads with `sha256sum -c SHA256SUMS.txt`.
+The binary reports its version: `meta-view -version`.
+
 ## Development
 
 ```sh
